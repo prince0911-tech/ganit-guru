@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Maths Working Book — Step-by-Step Calculator</title>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Patrick+Hand&family=Nunito:wght@400;600;700&family=Noto+Sans+Gujarati:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#FCFBF7;
+  --grid:#DCE7F2;
+  --margin:#E4574B;
+  --ink:#23355C;
+  --redpen:#D23F31;
+  --green:#1F7A4D;
+  --pencil:#7A8699;
+  --cell:48px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'Nunito','Noto Sans Gujarati',sans-serif;
+  background:#EEF2F6;
+  color:var(--ink);
+  min-height:100vh;
+  display:flex;flex-direction:column;align-items:center;
+  padding:24px 12px 48px;
+}
+/* ---------- header like a notebook label ---------- */
+.label{
+  background:#fff;
+  border:2px solid var(--ink);
+  border-radius:6px;
+  padding:14px 28px;
+  text-align:center;
+  box-shadow:4px 4px 0 rgba(35,53,92,.15);
+  margin-bottom:20px;
+  max-width:680px;
+  position:relative;
+}
+.label h1{font-family:'Caveat','Noto Sans Gujarati',cursive;font-size:2.2rem;line-height:1;color:var(--ink)}
+.label p{font-size:.85rem;color:var(--pencil);margin-top:4px}
+.langbtn{
+  position:absolute;top:-14px;right:-14px;
+  font-family:'Nunito','Noto Sans Gujarati',sans-serif;font-weight:700;font-size:.9rem;
+  padding:6px 14px;border:2px solid var(--ink);border-radius:20px;
+  background:var(--green);color:#fff;cursor:pointer;
+  box-shadow:2px 2px 0 rgba(35,53,92,.25);
+}
+.langbtn:hover{filter:brightness(1.1)}
+/* ---------- input bar ---------- */
+.bar{
+  display:flex;gap:8px;flex-wrap:wrap;justify-content:center;
+  margin-bottom:14px;width:100%;max-width:720px;
+}
+.bar input{
+  flex:1;min-width:220px;
+  font-family:'Patrick Hand','Noto Sans Gujarati',cursive;font-size:1.4rem;
+  padding:8px 16px;border:2px solid var(--ink);border-radius:8px;
+  background:#fff;color:var(--ink);outline:none;
+}
+.bar input:focus{border-color:var(--green)}
+.btn{
+  font-family:'Nunito','Noto Sans Gujarati',sans-serif;font-weight:700;font-size:1rem;
+  padding:8px 20px;border:2px solid var(--ink);border-radius:8px;
+  background:var(--ink);color:#fff;cursor:pointer;
+}
+.btn:hover{background:#31477a}
+.btn.ghost{background:#fff;color:var(--ink)}
+.btn.ghost:hover{background:#f0f3f8}
+.btn:focus-visible,.chip:focus-visible,.langbtn:focus-visible,.bar input:focus-visible{outline:3px solid var(--green);outline-offset:2px}
+.chips{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:20px}
+.chip{
+  font-family:'Patrick Hand',cursive;font-size:1.05rem;
+  padding:4px 14px;border:1.5px dashed var(--pencil);border-radius:20px;
+  background:#fff;color:var(--ink);cursor:pointer;
+}
+.chip:hover{border-color:var(--green);color:var(--green)}
+/* ---------- the exercise-book page ---------- */
+.page{
+  position:relative;
+  background:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px),
+    var(--paper);
+  background-size:24px 24px;
+  border:1px solid #C9D4E2;
+  border-radius:4px;
+  box-shadow:0 10px 30px rgba(35,53,92,.12);
+  padding:40px 32px 32px 64px;
+  min-width:340px;max-width:96vw;
+  overflow-x:auto;
+}
+.page::before{ /* red margin line */
+  content:'';position:absolute;top:0;bottom:0;left:44px;
+  width:2px;background:var(--margin);opacity:.7;
+}
+.board{position:relative;margin:0 auto;transition:height .3s}
+.cellu{
+  position:absolute;width:var(--cell);height:var(--cell);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Patrick Hand',cursive;
+  font-size:calc(var(--cell)*.62);
+  color:var(--ink);
+  animation:pop .35s ease-out;
+}
+@keyframes pop{
+  0%{transform:scale(.3);opacity:0}
+  70%{transform:scale(1.15)}
+  100%{transform:scale(1);opacity:1}
+}
+@media (prefers-reduced-motion: reduce){
+  .cellu{animation:none}
+}
+.cellu.op{color:var(--pencil)}
+.cellu.vbar{border-right:2.5px solid var(--ink)}
+.cellu.ans{color:var(--green);font-weight:700}
+.cellu.carry,.cellu.borrow{
+  font-size:calc(var(--cell)*.4);color:var(--redpen);
+  align-items:flex-end;padding-bottom:4px;
+}
+.cellu.strike::after{
+  content:'';position:absolute;left:18%;right:18%;top:48%;
+  height:2px;background:var(--redpen);transform:rotate(-38deg);
+}
+.cellu.focus{background:rgba(31,122,77,.14);border-radius:8px}
+.hline{
+  position:absolute;height:2.5px;background:var(--ink);border-radius:2px;
+  animation:draw .4s ease-out;transform-origin:left;
+}
+@keyframes draw{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@media (prefers-reduced-motion: reduce){ .hline{animation:none} }
+/* ---------- narration ---------- */
+.say{
+  margin-top:22px;
+  background:#fff;border-left:5px solid var(--green);
+  border-radius:0 8px 8px 0;
+  padding:12px 18px;
+  max-width:720px;width:100%;
+  font-size:1.08rem;min-height:52px;
+  box-shadow:0 2px 8px rgba(35,53,92,.08);
+}
+.say b{color:var(--green)}
+/* ---------- controls ---------- */
+.controls{
+  display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center;
+  margin-top:14px;
+}
+.prog{font-weight:700;color:var(--pencil);min-width:110px;text-align:center}
+select{
+  font-family:'Nunito','Noto Sans Gujarati',sans-serif;font-weight:600;padding:6px 10px;
+  border:2px solid var(--ink);border-radius:8px;background:#fff;color:var(--ink);
+}
+.err{color:var(--redpen);font-weight:700;margin-top:12px;text-align:center;max-width:640px}
+.hidden{display:none}
+footer{margin-top:26px;color:var(--pencil);font-size:.8rem;text-align:center}
+@media (max-width:520px){
+  .page{padding:28px 16px 24px 44px}
+  .page::before{left:30px}
+}
+</style>
+</head>
+<body>
+
+<div class="label">
+  <button class="langbtn" id="lang">ગુજરાતી</button>
+  <h1 id="ttl">Maths Working Book</h1>
+  <p id="sub">Teacher types a sum • students watch the standard written method, one step at a time</p>
+</div>
+
+<div class="bar">
+  <input id="expr" placeholder="Type a sum, e.g.  33 ÷ 3   or   478 + 356" aria-label="Enter a calculation">
+  <button class="btn" id="go">Show working</button>
+</div>
+
+<div class="chips" id="chips">
+  <button class="chip">33 ÷ 3</button>
+  <button class="chip">156 ÷ 12</button>
+  <button class="chip">478 + 356</button>
+  <button class="chip">703 − 458</button>
+  <button class="chip">123 × 456</button>
+  <button class="chip">987654321 ÷ 123</button>
+</div>
+
+<div class="err hidden" id="err"></div>
+
+<div class="page hidden" id="page">
+  <div class="board" id="board"></div>
+</div>
+
+<div class="say hidden" id="say" aria-live="polite"></div>
+
+<div class="controls hidden" id="controls">
+  <button class="btn ghost" id="restart">⟲ Restart</button>
+  <button class="btn ghost" id="prev">← Back</button>
+  <button class="btn" id="play">▶ Play</button>
+  <button class="btn ghost" id="next">Next →</button>
+  <button class="btn ghost" id="skip">⏭ Answer</button>
+  <span class="prog" id="prog"></span>
+  <select id="speed" aria-label="Playback speed">
+    <option value="3200" id="op-slow">Slow</option>
+    <option value="2200" id="op-normal" selected>Normal</option>
+    <option value="1300" id="op-fast">Fast</option>
+  </select>
+  <button class="btn ghost" id="voice">🔊 Voice: off</button>
+</div>
+
+<footer id="foot">Whole numbers up to 12 digits (multiplication: 15 digits combined) • use + − × ÷ (also *, /, x or %)</footer>
+
+<script>
+(function(){
+"use strict";
+const $=id=>document.getElementById(id);
+const dig=n=>String(n).split('').map(Number);
+
+/* ================= LANGUAGE PACKS ================= */
+let LANG='en';
+
+const PLACES_I18N={
+  en:['ones','tens','hundreds','thousands','ten-thousands','hundred-thousands','millions','ten-millions','hundred-millions','billions','ten-billions','hundred-billions'],
+  gu:['એકમ','દશક','સો','હજાર','દસ હજાર','લાખ','દસ લાખ','કરોડ','દસ કરોડ','અબજ','દસ અબજ','ખર્વ']
+};
+const PL=i=>PLACES_I18N[LANG][i]||PLACES_I18N[LANG][PLACES_I18N[LANG].length-1];
+const cap=s=>s[0].toUpperCase()+s.slice(1);
+
+const UI={
+en:{
+  title:'Maths Working Book',
+  sub:'Teacher types a sum • students watch the standard written method, one step at a time',
+  placeholder:'Type a sum, e.g.  33 ÷ 3   or   478 + 356',
+  go:'Show working', restart:'⟲ Restart', back:'← Back', play:'▶ Play', pause:'⏸ Pause',
+  next:'Next →', skip:'⏭ Answer', slow:'Slow', normal:'Normal', fast:'Fast',
+  voiceOff:'🔊 Voice: off', voiceOn:'🔊 Voice: on',
+  step:(i,n)=>`Step ${i} of ${n}`,
+  foot:'Whole numbers up to 12 digits (multiplication: 15 digits combined) • use + − × ÷ (also *, /, x or %)',
+  errParse:'Please type a sum like  478 + 356  or  33 ÷ 3  (whole numbers only).',
+  errLen:'Please keep numbers to 12 digits or fewer.',
+  errMul:'For multiplication, keep the two numbers to 15 digits combined (e.g. 8 digits × 7 digits).',
+  errSub:(a,b)=>`For this method the bigger number goes first — try ${b} − ${a}.`,
+  errDiv0:"We can't divide by zero!",
+  errGen:'Something went wrong with that sum — try another one.',
+  langBtn:'ગુજરાતી', voiceLang:'en-US',
+  noVoice:'No Gujarati voice found on this device. On Android: Settings → Google Text-to-Speech → install the Gujarati voice. Chrome on Android usually has it built in.'
+},
+gu:{
+  title:'ગણિત કાર્યપુસ્તિકા',
+  sub:'શિક્ષક દાખલો લખે • વિદ્યાર્થીઓ પ્રમાણભૂત પદ્ધતિથી પગલાં-દર-પગલાં ગણતરી જુએ',
+  placeholder:'સંખ્યા લખો, દા.ત.  33 ÷ 3  અથવા  478 + 356',
+  go:'ગણતરી કરો', restart:'⟲ ફરી શરૂ', back:'← પાછળ', play:'▶ ચલાવો', pause:'⏸ થોભો',
+  next:'આગળ →', skip:'⏭ જવાબ', slow:'ધીમું', normal:'સામાન્ય', fast:'ઝડપી',
+  voiceOff:'🔊 અવાજ: બંધ', voiceOn:'🔊 અવાજ: ચાલુ',
+  step:(i,n)=>`પગલું ${i} / ${n}`,
+  foot:'12 અંક સુધીની પૂર્ણ સંખ્યાઓ (ગુણાકાર: બંને મળીને 15 અંક) • + − × ÷ વાપરો (*, /, x કે % પણ ચાલે)',
+  errParse:'કૃપા કરીને આવો દાખલો લખો:  478 + 356  અથવા  33 ÷ 3  (માત્ર પૂર્ણ સંખ્યાઓ).',
+  errLen:'કૃપા કરીને સંખ્યાઓ 12 અંક સુધી રાખો.',
+  errMul:'ગુણાકાર માટે બંને સંખ્યાઓ મળીને 15 અંક સુધી રાખો (દા.ત. 8 અંક × 7 અંક).',
+  errSub:(a,b)=>`આ પદ્ધતિમાં મોટી સંખ્યા પહેલા આવે — ${b} − ${a} અજમાવો.`,
+  errDiv0:'શૂન્ય વડે ભાગી શકાય નહીં!',
+  errGen:'કંઈક ખોટું થયું — બીજો દાખલો અજમાવો.',
+  langBtn:'English', voiceLang:'gu-IN',
+  noVoice:'આ ઉપકરણ પર ગુજરાતી અવાજ મળ્યો નથી. Android પર: Settings → Google Text-to-Speech → ગુજરાતી અવાજ ઇન્સ્ટોલ કરો. (No Gujarati voice on this device — install it in Google Text-to-Speech settings.)'
+}};
+
+const S={
+en:{
+  addIntro:(a,b)=>`Write <b>${a}</b> above <b>${b}</b>, lining up the digits by place value. We add starting from the <b>ones</b> column.`,
+  addFinalCarry:(c,sum)=>`Finally, bring the carried <b>${c}</b> down: the answer is <b>${sum}</b>.`,
+  addCol:(place,da,db,carry,s,unit,nc,nextPlace)=>`<b>${cap(place)}:</b> ${da} + ${db}`+(carry?` + ${carry} (carried)`:``)+` = <b>${s}</b>. Write ${unit}`+(nc?` and carry ${nc} to the ${nextPlace} column.`:`.`),
+  addDone:(a,b)=>`✅ Done! <b>${a} + ${b} = ${a+b}</b>`,
+  subIntro:(a,b)=>`Write <b>${a}</b> on top and <b>${b}</b> below, digits lined up. Subtract starting from the <b>ones</b>.`,
+  subBorrow:(db,t,lender,mid,place,nv)=>`We can't take ${db} from ${t} — so we <b>borrow</b> from the ${lender} column.${mid?' The 0 in between becomes 9.':''} Now the ${place} digit is <b>${nv}</b>.`,
+  subCol:(place,top,db,res)=>`<b>${cap(place)}:</b> ${top} − ${db} = <b>${res}</b>.`,
+  subDone:(a,b)=>`✅ Done! <b>${a} − ${b} = ${a-b}</b>`,
+  mulIntro:(a,b,multi,sp)=>`Write <b>${a}</b> on top and <b>${b}</b> below. We multiply ${a} by each digit of ${b}${multi?`, starting from the <b>${sp}</b> digit`:``}. Each round of carries gets its own small red line above.`,
+  mulStage:(a,place,bd)=>`Multiply ${a} by the <b>${place}</b> digit, ${bd}.`,
+  mulZeros:(n,bd,place,x)=>`First put <b>${n===1?'a 0':n+' zeros'}</b> — the ${bd} is in the ${place} place, so we're really multiplying by ${x}.`,
+  mulLeft:(ai,bd,ci,prod)=>`${ai} × ${bd}`+(ci?` + ${ci} (carried)`:``)+` = <b>${prod}</b>. Write it down.`,
+  mulDigit:(ai,bd,ci,prod,unit,carry,above)=>`${ai} × ${bd}`+(ci?` + ${ci} (carried)`:``)+` = <b>${prod}</b>. Write ${unit}`+(carry?`, carry <b>${carry}</b> — write it small above the <b>${above}</b>.`:`.`),
+  mulAddStart:()=>`Now <b>add the partial products</b> together, column by column.`,
+  mulAddCol:(place,colSum,unit,carry)=>`Column ${place}: total <b>${colSum}</b>. Write ${unit}`+(carry?`, carry <b>${carry}</b> above the next column.`:`.`),
+  mulLast:v=>`Last column gives <b>${v}</b>.`,
+  mulDone:(a,b)=>`✅ Done! <b>${a} × ${b} = ${a*b}</b>`,
+  divIntro:(a,b)=>`We divide <b>${a} ÷ ${b}</b> using long division. ${b} sits outside, ${a} inside. The answer will go on top.`,
+  divBring:(d,x)=>`<b>Bring down</b> the next digit, ${d}. Now we have ${x}.`,
+  divNoGo:(b,r)=>`${b} doesn't go into ${r}, so we look at the next digit too.`,
+  divQ:(b,r,q)=>`How many times does ${b} go into <b>${r}</b>? It goes <b>${q}</b> time${q===1?'':'s'}. Write ${q} on top.`,
+  divProd:(q,b,p)=>`${q} × ${b} = <b>${p}</b>. Write ${p} underneath and subtract.`,
+  divSub:(r,p,nr)=>`${r} − ${p} = <b>${nr}</b>.`,
+  divExact:(a,b,qv)=>`✅ No remainder — it divides exactly. <b>${a} ÷ ${b} = ${qv}</b>`,
+  divRem:(a,b,qv,rem)=>`✅ All digits used. <b>${a} ÷ ${b} = ${qv} remainder ${rem}</b>`
+},
+gu:{
+  addIntro:(a,b)=>`<b>${a}</b> ને ઉપર અને <b>${b}</b> ને નીચે લખો, અંકોને સ્થાનકિંમત પ્રમાણે ગોઠવીને. સરવાળો <b>એકમ</b>ના સ્તંભથી શરૂ કરીએ.`,
+  addFinalCarry:(c,sum)=>`છેલ્લે, વદ્દીનો <b>${c}</b> નીચે ઉતારો: જવાબ છે <b>${sum}</b>.`,
+  addCol:(place,da,db,carry,s,unit,nc,nextPlace)=>`<b>${place}:</b> ${da} + ${db}`+(carry?` + ${carry} (વદ્દી)`:``)+` = <b>${s}</b>. ${unit} લખો`+(nc?` અને ${nc}ની વદ્દી ${nextPlace}ના સ્તંભ પર લઈ જાઓ.`:`.`),
+  addDone:(a,b)=>`✅ થઈ ગયું! <b>${a} + ${b} = ${a+b}</b>`,
+  subIntro:(a,b)=>`<b>${a}</b> ઉપર અને <b>${b}</b> નીચે લખો, અંકો ગોઠવીને. બાદબાકી <b>એકમ</b>થી શરૂ કરીએ.`,
+  subBorrow:(db,t,lender,mid,place,nv)=>`${t}માંથી ${db} બાદ ન થાય — એટલે ${lender}ના સ્તંભમાંથી <b>ઉધાર</b> લઈએ.${mid?' વચ્ચેનો 0 હવે 9 બને છે.':''} હવે ${place}નો અંક <b>${nv}</b> છે.`,
+  subCol:(place,top,db,res)=>`<b>${place}:</b> ${top} − ${db} = <b>${res}</b>.`,
+  subDone:(a,b)=>`✅ થઈ ગયું! <b>${a} − ${b} = ${a-b}</b>`,
+  mulIntro:(a,b,multi,sp)=>`<b>${a}</b> ઉપર અને <b>${b}</b> નીચે લખો. ${a} ને ${b}ના દરેક અંક વડે ગુણીશું${multi?`, <b>${sp}</b>ના અંકથી શરૂ કરીને`:``}. દરેક તબક્કાની વદ્દી ઉપર પોતાની નાની લાલ લીટીમાં લખાશે.`,
+  mulStage:(a,place,bd)=>`${a} ને <b>${place}</b>ના અંક ${bd} વડે ગુણો.`,
+  mulZeros:(n,bd,place,x)=>`પહેલા <b>${n===1?'એક 0':n+' શૂન્ય'}</b> મૂકો — ${bd} ${place}ના સ્થાને છે, એટલે ખરેખર આપણે ${x} વડે ગુણીએ છીએ.`,
+  mulLeft:(ai,bd,ci,prod)=>`${ai} × ${bd}`+(ci?` + ${ci} (વદ્દી)`:``)+` = <b>${prod}</b>. લખી દો.`,
+  mulDigit:(ai,bd,ci,prod,unit,carry,above)=>`${ai} × ${bd}`+(ci?` + ${ci} (વદ્દી)`:``)+` = <b>${prod}</b>. ${unit} લખો`+(carry?`, વદ્દી <b>${carry}</b> — <b>${above}</b>ની ઉપર નાની લખો.`:`.`),
+  mulAddStart:()=>`હવે <b>આંશિક ગુણાકારોનો સરવાળો</b> કરીએ, સ્તંભ-દર-સ્તંભ.`,
+  mulAddCol:(place,colSum,unit,carry)=>`${place}નો સ્તંભ: કુલ <b>${colSum}</b>. ${unit} લખો`+(carry?`, વદ્દી <b>${carry}</b> આગળના સ્તંભની ઉપર.`:`.`),
+  mulLast:v=>`છેલ્લો સ્તંભ <b>${v}</b> આપે છે.`,
+  mulDone:(a,b)=>`✅ થઈ ગયું! <b>${a} × ${b} = ${a*b}</b>`,
+  divIntro:(a,b)=>`<b>${a} ÷ ${b}</b> ભાગાકારથી કરીએ. ${b} બહાર અને ${a} અંદર.`,
+  divBring:(d,x)=>`આગળનો અંક ${d} <b>નીચે ઉતારો</b>. હવે આપણી પાસે ${x} છે.`,
+  divNoGo:(b,r)=>`${r} ને ${b} વડે ભાગી શકાતો નથી, એટલે આગળનો અંક પણ સાથે લઈએ.`,
+  divQ:(b,r,q)=>`<b>${r}</b> ને ${b} વડે  કેટલી વાર ભાગી શકાય? <b>${q}</b> વાર. એટલે ${q} ઉપર લખો.`,
+  divProd:(q,b,p)=>`${q} × ${b} = <b>${p}</b>. નીચે લખીને બાદ કરો.`,
+  divSub:(r,p,nr)=>`${r} − ${p} = <b>${nr}</b>.`,
+  divExact:(a,b,qv)=>`✅ શેષ નથી — બરાબર ભાગાય છે. <b>${a} ÷ ${b} = ${qv}</b>`,
+  divRem:(a,b,qv,rem)=>`✅ બધા અંક વપરાઈ ગયા. <b>${a} ÷ ${b} = ${qv}, શેષ ${rem}</b>`
+}};
+const T=(k,...args)=>S[LANG][k](...args);
+
+/* ================= STEP BUILDERS =================
+   step = { cells:[{r,c,t,cls}], lines:[{r,c0,c1,pos}], say:"..." }        */
+
+function buildAdd(a,b){
+  const A=dig(a),B=dig(b),w=Math.max(A.length,B.length)+1;
+  const col=(arr,i)=>1+(w-arr.length)+i;           // col 0 = sign column
+  const steps=[],base=[];
+  A.forEach((d,i)=>base.push({r:1,c:col(A,i),t:d}));
+  B.forEach((d,i)=>base.push({r:2,c:col(B,i),t:d}));
+  base.push({r:2,c:0,t:'+',cls:'op'});
+  steps.push({cells:base,lines:[{r:2,c0:0,c1:w,pos:'bottom'}],say:T('addIntro',a,b)});
+  let carry=0;
+  for(let j=0;j<w;j++){
+    const cA=A[A.length-1-j], cB=B[B.length-1-j];
+    if(cA===undefined&&cB===undefined&&carry===0) break;
+    const da=cA??0, db=cB??0, s=da+db+carry, unit=s%10, nc=Math.floor(s/10);
+    const c=w-j;
+    if(cA===undefined&&cB===undefined){
+      steps.push({cells:[{r:3,c,t:carry,cls:'ans focus'}],say:T('addFinalCarry',carry,a+b)});
+      carry=0; break;
+    }
+    const cells=[{r:3,c,t:unit,cls:'ans focus'}];
+    if(nc) cells.push({r:0,c:c-1,t:nc,cls:'carry focus'});
+    steps.push({cells,say:T('addCol',PL(j),da,db,carry,s,unit,nc,PL(j+1))});
+    carry=nc;
+  }
+  steps.push({cells:[],say:T('addDone',a,b)});
+  return steps;
+}
+
+function buildSub(a,b){
+  const T_=dig(a),B=dig(b),w=T_.length;
+  const col=(arr,i)=>1+(w-arr.length)+i;
+  const steps=[],base=[];
+  T_.forEach((d,i)=>base.push({r:1,c:col(T_,i),t:d}));
+  B.forEach((d,i)=>base.push({r:2,c:col(B,i),t:d}));
+  base.push({r:2,c:0,t:'−',cls:'op'});
+  steps.push({cells:base,lines:[{r:2,c0:0,c1:w,pos:'bottom'}],say:T('subIntro',a,b)});
+  const top=[...T_];
+  for(let j=0;j<w;j++){
+    const i=w-1-j, c=w-j;
+    const db=B[B.length-1-j]??0;
+    if(top[i]<db){
+      let k=i-1; while(top[k]===0) k--;
+      const cells=[];
+      cells.push({r:1,c:k+1,t:top[k],cls:'strike focus'});
+      top[k]-=1;
+      cells.push({r:0,c:k+1,t:top[k],cls:'borrow focus'});
+      let mid=false;
+      for(let m=k+1;m<i;m++){
+        cells.push({r:1,c:m+1,t:0,cls:'strike focus'});
+        cells.push({r:0,c:m+1,t:9,cls:'borrow focus'});
+        top[m]=9; mid=true;
+      }
+      cells.push({r:1,c:i+1,t:top[i],cls:'strike focus'});
+      const orig=top[i];
+      top[i]+=10;
+      cells.push({r:0,c:i+1,t:top[i],cls:'borrow focus'});
+      steps.push({cells,say:T('subBorrow',db,orig,PL(w-1-k),mid,PL(j),top[i])});
+    }
+    const res=top[i]-db;
+    const prevTop=top[i];
+    top[i]=res;
+    steps.push({cells:[{r:3,c,t:res,cls:'ans focus'}],say:T('subCol',PL(j),prevTop,db,res)});
+  }
+  steps.push({cells:[],say:T('subDone',a,b)});
+  return steps;
+}
+
+function buildMul(a,b){
+  const A=dig(a),Bd=dig(b);
+  const parts=Bd.map((d,i)=>a*Bd[Bd.length-1-i]).map((p,i)=>p*Math.pow(10,i));
+  const W=Math.max(String(a).length,String(b).length,String(a*b).length,
+                   ...parts.map(p=>String(p||0).length));
+  /* pre-check which multiplication stages produce carries (each gets its own carry line) */
+  const stageHasCarry=Bd.map(bd=>{
+    let c=0,has=false;
+    for(let i=A.length-1;i>0;i--){c=Math.floor((A[i]*bd+c)/10);if(c)has=true;}
+    return has;
+  });
+  const carryLines=stageHasCarry.filter(x=>x).length;
+  const partialVals=Bd.map((bd,j)=>a*bd*Math.pow(10,Bd.length-1-j));
+  /* pre-check whether adding the partials produces carries */
+  let addHasCarry=false;
+  if(Bd.length>1){
+    const pdg=partialVals.map(v=>dig(v));let c=0;const D=dig(a*b);
+    for(let q=0;q<D.length-1;q++){
+      c=Math.floor((pdg.reduce((s,pd)=>s+(pd[pd.length-1-q]??0),0)+c)/10);
+      if(c)addHasCarry=true;
+    }
+  }
+  const rTop=carryLines, rB=rTop+1;
+  const rAddCarry=addHasCarry?rB+1:null;
+  const rPart0=rB+1+(addHasCarry?1:0);
+  const put=(row,val,shift,cls)=>{
+    const D=dig(val);
+    return D.map((dd,k)=>({r:row,c:W-shift-(D.length-1-k),t:dd,cls}));
+  };
+  const steps=[],base=[];
+  base.push(...put(rTop,a,0));
+  base.push(...put(rB,b,0));
+  base.push({r:rB,c:W-Math.max(String(b).length,String(a).length),t:'×',cls:'op'});
+  steps.push({cells:base,lines:[{r:rB,c0:0,c1:W,pos:'bottom'}],
+    say:T('mulIntro',a,b,Bd.length>1,PL(Bd.length-1))});
+  let row=rPart0;
+  let nextCarryRow=rTop-1;               // first stage's carries sit closest to the number
+  for(let j=0;j<Bd.length;j++){          // start from the LEFT digit of b
+    const bd=Bd[j], shift=Bd.length-1-j;
+    const myCarryRow=stageHasCarry[j]?nextCarryRow--:null;
+    if(Bd.length>1) steps.push({cells:[],say:T('mulStage',a,PL(shift),bd)});
+    if(shift>0){
+      const zeros=[];
+      for(let z=shift-1;z>=0;z--) zeros.push({r:row,c:W-z,t:0,cls:'focus'});
+      steps.push({cells:zeros,say:T('mulZeros',shift,bd,PL(shift),bd*Math.pow(10,shift))});
+    }
+    let carry=0;
+    for(let i=A.length-1;i>=0;i--){
+      const prod=A[i]*bd+carry, carryIn=carry;
+      const pos=(A.length-1-i)+shift;
+      if(i===0){
+        steps.push({cells:put(row,prod,pos,'focus'),say:T('mulLeft',A[i],bd,carryIn,prod)});
+      }else{
+        const unit=prod%10; carry=Math.floor(prod/10);
+        const cells=[{r:row,c:W-pos,t:unit,cls:'focus'}];
+        if(carry) cells.push({r:myCarryRow,c:W-(A.length-i),t:carry,cls:'carry focus'});
+        steps.push({cells,say:T('mulDigit',A[i],bd,carryIn,prod,unit,carry,A[i-1])});
+      }
+    }
+    row++;
+  }
+  if(Bd.length>1){
+    steps.push({cells:[{r:row-1,c:0,t:'+',cls:'op'}],lines:[{r:row-1,c0:0,c1:W,pos:'bottom'}],
+      say:T('mulAddStart')});
+    const total=a*b, D=dig(total);
+    let carry=0;
+    const partDigits=partialVals.map(v=>dig(v));
+    for(let q=0;q<D.length;q++){
+      const colSum=partDigits.reduce((s,pd)=>s+(pd[pd.length-1-q]??0),0)+carry;
+      const unit=colSum%10; carry=Math.floor(colSum/10);
+      const last=q===D.length-1;
+      const val=last?colSum:unit;
+      const cells=[{r:row,c:W-q,t:val,cls:'ans focus'}];
+      if(!last&&carry) cells.push({r:rAddCarry,c:W-q-1,t:carry,cls:'carry focus'});
+      steps.push({cells,say:last?T('mulLast',val):T('mulAddCol',PL(q),colSum,unit,carry)});
+      if(last)break;
+    }
+  }
+  steps.push({cells:[],say:T('mulDone',a,b)});
+  return steps;
+}
+
+function buildDiv(a,b){
+  const D=dig(a), n=D.length, dl=String(b).length, off=dl+1;
+  const steps=[],base=[];
+  String(b).split('').forEach((ch,i)=>base.push({r:1,c:i,t:ch}));
+  base.push({r:1,c:dl,t:'',cls:'vbar'});           // straight vertical line
+  D.forEach((d,i)=>base.push({r:1,c:off+i,t:d}));
+  steps.push({cells:base,lines:[{r:1,c0:off,c1:off+n-1,pos:'top'}],say:T('divIntro',a,b)});
+  let r=0,started=false,row=2,remRow=null,rem=0;
+  for(let i=0;i<n;i++){
+    const d=D[i];
+    if(started){
+      steps.push({cells:[{r:remRow,c:off+i,t:d,cls:'focus'}],say:T('divBring',d,r*10+d)});
+    }
+    r=r*10+d;
+    const q=Math.floor(r/b);
+    if(!started&&q===0&&i<n-1){
+      steps.push({cells:[],say:T('divNoGo',b,r)});
+      continue;
+    }
+    started=true;
+    steps.push({cells:[{r:0,c:off+i,t:q,cls:'ans focus'}],say:T('divQ',b,r,q)});
+    const p=q*b,P=dig(p);
+    const pc=P.map((pd,k)=>({r:row,c:off+i-(P.length-1)+k,t:pd,cls:'focus'}));
+    const minusCol=off+i-P.length;
+    if(minusCol>=off) pc.push({r:row,c:minusCol,t:'−',cls:'op'});
+    if(row===2) pc.push({r:row,c:dl,t:'',cls:'vbar'}); // bar extends only to the first number below
+    steps.push({cells:pc,lines:[{r:row,c0:Math.max(off,minusCol),c1:off+i+(i+1<n?1:0),pos:'bottom'}],
+      say:T('divProd',q,b,p)});
+    const newRem=r-p,R=dig(newRem);
+    steps.push({cells:R.map((rd,k)=>({r:row+1,c:off+i-(R.length-1)+k,t:rd,cls:'focus'})),
+      say:T('divSub',r,p,newRem)});
+    remRow=row+1; row+=2; r=newRem; rem=newRem;
+  }
+  const qv=Math.floor(a/b);
+  steps.push({cells:[],say: rem===0?T('divExact',a,b,qv):T('divRem',a,b,qv,rem)});
+  return steps;
+}
+
+/* ================= RENDERER & PLAYER ================= */
+let steps=[],idx=0,timer=null,voiceOn=false;
+let last=null;   // {a,op,b} of the current sum, for language re-render
+
+/* ---- speech: voices load asynchronously, and we must pick the right one ---- */
+let VOICES=[],voiceWarned=false;
+function loadVoices(){ if('speechSynthesis'in window) VOICES=speechSynthesis.getVoices()||[]; }
+if('speechSynthesis'in window){
+  loadVoices();
+  speechSynthesis.onvoiceschanged=loadVoices;
+}
+function pickVoice(){
+  if(!VOICES.length) loadVoices();
+  const norm=v=>(v.lang||'').toLowerCase().replace('_','-');
+  if(LANG==='gu'){
+    return VOICES.find(v=>norm(v).startsWith('gu'))
+        || VOICES.find(v=>/gujarati|ગુજરાતી/i.test(v.name))
+        || null;
+  }
+  return VOICES.find(v=>norm(v).startsWith('en-in'))
+      || VOICES.find(v=>norm(v).startsWith('en'))
+      || null;
+}
+function speak(text){
+  if(!voiceOn||!('speechSynthesis'in window)) return;
+  speechSynthesis.cancel();
+  const v=pickVoice();
+  if(LANG==='gu'&&!v){
+    // don't mangle Gujarati text with an English voice — tell the user instead
+    if(!voiceWarned){
+      voiceWarned=true;
+      showErr(UI[LANG].noVoice);
+      setTimeout(()=>$('err').classList.add('hidden'),9000);
+    }
+    return;
+  }
+  const utt=new SpeechSynthesisUtterance(text);
+  if(v){utt.voice=v;utt.lang=v.lang;}else{utt.lang=UI[LANG].voiceLang;}
+  utt.rate=.95;
+  // small delay: Chrome sometimes swallows speak() called right after cancel()
+  setTimeout(()=>speechSynthesis.speak(utt),60);
+}
+
+function render(){
+  const board=$('board');
+  board.innerHTML='';
+  const shown=steps.slice(0,idx+1);
+  let maxR=0,maxC=0;
+  // look ahead so the board doesn't jump around
+  steps.forEach(s=>{
+    (s.cells||[]).forEach(c=>{maxR=Math.max(maxR,c.r);maxC=Math.max(maxC,c.c);});
+    (s.lines||[]).forEach(l=>{maxR=Math.max(maxR,l.r);maxC=Math.max(maxC,l.c1);});
+  });
+  // shrink cells so wide sums still fit on screen
+  const avail=Math.min(window.innerWidth,1100)-140;
+  const u=Math.max(20,Math.min(48,Math.floor(avail/(maxC+1))));
+  board.style.setProperty('--cell',u+'px');
+  // variable column widths: the division-bar column is narrow so the
+  // divisor sits right next to the dividend
+  const widths=new Array(maxC+1).fill(u);
+  steps.forEach(s=>(s.cells||[]).forEach(c=>{
+    if(c.cls&&c.cls.indexOf('vbar')>-1) widths[c.c]=Math.round(u*0.35);
+  }));
+  const xs=[0];
+  for(let c=0;c<=maxC;c++) xs[c+1]=xs[c]+widths[c];
+  board.style.width=xs[maxC+1]+'px';
+  board.style.height=(maxR+1)*u+'px';
+  shown.forEach((s,si)=>{
+    (s.cells||[]).forEach(c=>{
+      const el=document.createElement('div');
+      el.className='cellu'+(c.cls?' '+c.cls.replace('focus',si===idx?'focus':''):'');
+      el.style.left=xs[c.c]+'px'; el.style.top=c.r*u+'px';
+      el.style.width=widths[c.c]+'px';
+      el.textContent=c.t;
+      if(si<idx) el.style.animation='none';
+      board.appendChild(el);
+    });
+    (s.lines||[]).forEach(l=>{
+      const el=document.createElement('div');
+      el.className='hline';
+      el.style.left=xs[l.c0]+'px';
+      el.style.width=(xs[l.c1+1]-xs[l.c0])+'px';
+      el.style.top=(l.pos==='top'? l.r*u : (l.r+1)*u+3)+'px';
+      if(si<idx) el.style.animation='none';
+      board.appendChild(el);
+    });
+  });
+  const s=steps[idx];
+  $('say').innerHTML=s.say;
+  $('prog').textContent=UI[LANG].step(idx+1,steps.length);
+  $('prev').disabled=idx===0;
+  $('next').disabled=idx===steps.length-1;
+  speak(s.say.replace(/<[^>]+>/g,'').replace(/[✅—]/g,' '));
+  if(idx===steps.length-1) stopPlay();
+}
+
+function stopPlay(){
+  if(timer){clearInterval(timer);timer=null;}
+  $('play').textContent=UI[LANG].play;
+}
+function startPlay(){
+  if(idx===steps.length-1){idx=0;render();}
+  timer=setInterval(()=>{
+    if(idx<steps.length-1){idx++;render();}else stopPlay();
+  },+$('speed').value);
+  $('play').textContent=UI[LANG].pause;
+}
+
+function buildSteps(a,op,b){
+  if(op==='+') return buildAdd(a,b);
+  if(op==='-'||op==='−') return buildSub(a,b);
+  if(op==='*'||op==='x'||op==='X'||op==='×') return buildMul(a,b);
+  return buildDiv(a,b);
+}
+
+function showErr(msg){const err=$('err');err.textContent=msg;err.classList.remove('hidden');}
+
+function start(exprStr){
+  const m=exprStr.replace(/,/g,'').match(/^\s*(\d+)\s*([+\-−*xX×\/÷%])\s*(\d+)\s*$/);
+  $('err').classList.add('hidden');
+  if(!m){showErr(UI[LANG].errParse);return;}
+  const a=+m[1], b=+m[3], op=m[2];
+  const la=m[1].length, lb=m[3].length;
+  if(la>12||lb>12){showErr(UI[LANG].errLen);return;}
+  const isMul=(op==='*'||op==='x'||op==='X'||op==='×');
+  if(isMul&&la+lb>15){showErr(UI[LANG].errMul);return;}
+  if((op==='-'||op==='−')&&a<b){showErr(UI[LANG].errSub(a,b));return;}
+  if(!isMul&&op!=='+'&&op!=='-'&&op!=='−'&&b===0){showErr(UI[LANG].errDiv0);return;}
+  try{ steps=buildSteps(a,op,b); }
+  catch(e){showErr(UI[LANG].errGen);return;}
+  last={a,op,b};
+  idx=0; stopPlay();
+  $('page').classList.remove('hidden');
+  $('say').classList.remove('hidden');
+  $('controls').classList.remove('hidden');
+  render();   // shows the setup — teacher presses Play or Next to begin
+}
+
+/* ================= LANGUAGE SWITCH ================= */
+function applyUI(){
+  const u=UI[LANG];
+  document.documentElement.lang=LANG==='gu'?'gu':'en';
+  $('ttl').textContent=u.title;
+  $('sub').textContent=u.sub;
+  $('expr').placeholder=u.placeholder;
+  $('go').textContent=u.go;
+  $('restart').textContent=u.restart;
+  $('prev').textContent=u.back;
+  $('play').textContent=timer?u.pause:u.play;
+  $('next').textContent=u.next;
+  $('skip').textContent=u.skip;
+  $('op-slow').textContent=u.slow;
+  $('op-normal').textContent=u.normal;
+  $('op-fast').textContent=u.fast;
+  $('voice').textContent=voiceOn?u.voiceOn:u.voiceOff;
+  $('foot').textContent=u.foot;
+  $('lang').textContent=u.langBtn;
+}
+$('lang').onclick=()=>{
+  LANG=LANG==='en'?'gu':'en';
+  voiceWarned=false;
+  applyUI();
+  $('err').classList.add('hidden');
+  if(last){                       // re-narrate the current sum in the new language
+    const keep=idx;
+    steps=buildSteps(last.a,last.op,last.b);
+    idx=Math.min(keep,steps.length-1);
+    render();
+  }
+};
+
+/* ================= WIRING ================= */
+$('go').onclick=()=>start($('expr').value);
+$('expr').addEventListener('keydown',e=>{if(e.key==='Enter')start($('expr').value);});
+$('chips').addEventListener('click',e=>{
+  if(e.target.classList.contains('chip')){
+    $('expr').value=e.target.textContent;
+    start(e.target.textContent);
+  }
+});
+$('next').onclick=()=>{stopPlay();if(idx<steps.length-1){idx++;render();}};
+$('prev').onclick=()=>{stopPlay();if(idx>0){idx--;render();}};
+$('restart').onclick=()=>{stopPlay();idx=0;render();};
+$('skip').onclick=()=>{stopPlay();idx=steps.length-1;render();};
+$('play').onclick=()=>{timer?stopPlay():startPlay();};
+$('voice').onclick=function(){
+  voiceOn=!voiceOn;
+  this.textContent=voiceOn?UI[LANG].voiceOn:UI[LANG].voiceOff;
+  if(!voiceOn){ if('speechSynthesis'in window)speechSynthesis.cancel(); return; }
+  loadVoices();
+  voiceWarned=false;
+  if(steps.length) speak(steps[idx].say.replace(/<[^>]+>/g,'').replace(/[✅—]/g,' '));
+};
+document.addEventListener('keydown',e=>{
+  if(document.activeElement===$('expr'))return;
+  if(e.key==='ArrowRight')$('next').click();
+  if(e.key==='ArrowLeft')$('prev').click();
+  if(e.key===' '){e.preventDefault();$('play').click();}
+});
+applyUI();
+})();
+</script>
+</body>
+</html>
