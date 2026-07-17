@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GanitGuru — Step-by-Step Calculator</title>
+<title>ગણિત ગુરુ — Ganit Guru</title>
 <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Patrick+Hand&family=Nunito:wght@400;600;700&family=Noto+Sans+Gujarati:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -171,7 +171,7 @@ footer{margin-top:26px;color:var(--pencil);font-size:.8rem;text-align:center}
 
 <div class="label">
   <button class="langbtn" id="lang">ગુજરાતી</button>
-  <h1 id="ttl">GanitGuru</h1>
+  <h1 id="ttl">Maths Working Book</h1>
   <p id="sub">Teacher types a sum • students watch the standard written method, one step at a time</p>
 </div>
 
@@ -239,7 +239,7 @@ const cap=s=>s[0].toUpperCase()+s.slice(1);
 
 const UI={
 en:{
-  title:'Maths Working Book',
+  title:'ગણિત ગુરુ · Ganit Guru',
   sub:'Teacher types a sum • students watch the standard written method, one step at a time',
   placeholder:'Type a sum, e.g.  33 ÷ 3   or   478 + 356',
   go:'Show working', restart:'⟲ Restart', back:'← Back', play:'▶ Play', pause:'⏸ Pause',
@@ -259,7 +259,7 @@ en:{
   noVoice:'No Gujarati voice found on this device. On Android: Settings → Google Text-to-Speech → install the Gujarati voice. Chrome on Android usually has it built in.'
 },
 gu:{
-  title:'ગણિત ગુરુ ',
+  title:'ગણિત ગુરુ',
   sub:'શિક્ષક દાખલો લખે • વિદ્યાર્થીઓ પ્રમાણભૂત પદ્ધતિથી પગલાં-દર-પગલાં ગણતરી જુએ',
   placeholder:'સંખ્યા લખો, દા.ત.  33 ÷ 3  અથવા  478 + 356',
   go:'ગણતરી કરો', restart:'⟲ ફરી શરૂ', back:'← પાછળ', play:'▶ ચલાવો', pause:'⏸ થોભો',
@@ -366,7 +366,8 @@ function buildAdd(...nums){
     minSignCol=Math.min(minSignCol,col(arr.length,0));
   });
   const signCol=minSignCol-1;
-  base.push({r:rowsN,c:signCol,t:'+',cls:'op'});
+  // a + sign before every addend from the second row onward
+  for(let ri=1;ri<rowsN;ri++) base.push({r:ri+1,c:signCol,t:'+',cls:'op'});
   const lineC1=w;
   steps.push({cells:base,lines:[{r:rowsN,c0:signCol,c1:lineC1,pos:'bottom'}],
     say:T('addIntroN',N,N.reduce((a,b)=>a+b,0))});
@@ -403,22 +404,27 @@ function buildSub(...nums){
   const D=N.map(dig);
 
   // ----- initial layout: first number, and the first subtrahend below it -----
+  // rows 0 and 1 are reserved for borrow annotations; the first number starts at row 2
   const base=[];
-  D[0].forEach((d,i)=>base.push({r:1,c:col(D[0].length,i),t:d}));
-  D[1].forEach((d,i)=>base.push({r:2,c:col(D[1].length,i),t:d}));
+  D[0].forEach((d,i)=>base.push({r:2,c:col(D[0].length,i),t:d}));
+  D[1].forEach((d,i)=>base.push({r:3,c:col(D[1].length,i),t:d}));
   const signCol=Math.min(col(D[0].length,0),col(D[1].length,0))-1;
-  base.push({r:2,c:signCol,t:'−',cls:'op'});
-  steps.push({cells:base,lines:[{r:2,c0:signCol,c1:w,pos:'bottom'}],
+  base.push({r:3,c:signCol,t:'−',cls:'op'});
+  steps.push({cells:base,lines:[{r:3,c0:signCol,c1:w,pos:'bottom'}],
     say:N.length>2?T('subIntroN',N):T('subIntro',N[0],N[1])});
 
   let top=[...D[0]];
   while(top.length<w) top.unshift(0);
-  let topRow=1;          // row where the current running-number digits live
-  let subRow=2;          // row of the subtrahend being processed
-  let ansRow=3;          // row where this stage's result is written
+  let topRow=2;          // row where the current running-number digits live
+  let subRow=3;          // row of the subtrahend being processed
+  let ansRow=4;          // row where this stage's result is written
 
   for(let s=1;s<N.length;s++){
     const B=dig(N[s]);
+    // per-stage annotation tracking: for each column, the row + value of its
+    // current borrow annotation, so we can cross it out if it changes again
+    const anno={};       // col -> {row, val}
+    let topRowNow=topRow;
     if(s>1){
       // reveal the next subtrahend under the previous result, with its own line
       const cells=B.map((d,k)=>({r:subRow,c:col(B.length,k),t:d,cls:'focus'}));
@@ -427,31 +433,53 @@ function buildSub(...nums){
       steps.push({cells,lines:[{r:subRow,c0:sc,c1:w,pos:'bottom'}],
         say:T('subNext',N[s])});
     }
+    // the annotation rows sit above the running digits; deeper cascades stack higher.
+    // we use negative-ish rows by offsetting: reserve up to 2 annotation lines.
+    const aRow0=topRowNow-1;      // primary annotation line
+    const aRowUp=topRowNow-2;     // higher line for re-borrowed columns
     for(let j=0;j<w;j++){
       const i=w-1-j, c=w-j;
       const db=B[B.length-1-j]??0;
-      if(top[i]<db){
-        let k=i-1; while(top[k]===0) k--;
+      // current value shown for this digit (may already be annotated)
+      const curVal=anno[i+1]?anno[i+1].val:top[i];
+      if(curVal<db){
+        let k=i-1;
+        // find a lender: skip columns showing 0
+        while((anno[k+1]?anno[k+1].val:top[k])===0) k--;
         const cells=[];
-        cells.push({r:topRow,c:k+1,t:top[k],cls:'strike focus'});
-        top[k]-=1;
-        cells.push({r:0,c:k+1,t:top[k],cls:'borrow focus'});
+        // helper: cross out whatever is currently shown for a column, then write new value on a fresh line
+        const annotate=(cc,newVal)=>{
+          if(anno[cc]){
+            cells.push({r:anno[cc].row,c:cc,t:anno[cc].val,cls:'borrow strike'});
+          }else{
+            cells.push({r:topRowNow,c:cc,t:top[cc-1],cls:'strike focus'});
+          }
+          const newRow=anno[cc]?aRowUp:aRow0;   // if re-annotating, go one line higher
+          cells.push({r:newRow,c:cc,t:newVal,cls:'borrow focus'});
+          anno[cc]={row:newRow,val:newVal};
+        };
+        // --- lender loses 1 ---
+        const lenderCol=k+1;
+        const lenderShown=anno[lenderCol]?anno[lenderCol].val:top[k];
+        annotate(lenderCol,lenderShown-1);
+        top[k]=lenderShown-1;
+        // --- any 0s in between become 9 ---
         let mid=false;
         for(let m=k+1;m<i;m++){
-          cells.push({r:topRow,c:m+1,t:0,cls:'strike focus'});
-          cells.push({r:0,c:m+1,t:9,cls:'borrow focus'});
+          const midCol=m+1;
+          annotate(midCol,9);
           top[m]=9; mid=true;
         }
-        cells.push({r:topRow,c:i+1,t:top[i],cls:'strike focus'});
-        const orig=top[i];
-        top[i]+=10;
-        cells.push({r:0,c:i+1,t:top[i],cls:'borrow focus'});
-        steps.push({cells,say:T('subBorrow',db,orig,PL(w-1-k),mid,PL(j),top[i])});
+        // --- current digit gains 10 ---
+        const meCol=i+1, meShown=anno[meCol]?anno[meCol].val:top[i];
+        annotate(meCol,meShown+10);
+        top[i]=meShown+10;
+        steps.push({cells,say:T('subBorrow',db,meShown,PL(w-1-k),mid,PL(j),meShown+10)});
       }
-      const res=top[i]-db;
-      const prevTop=top[i];
+      const cur=anno[i+1]?anno[i+1].val:top[i];
+      const res=cur-db;
       top[i]=res;
-      steps.push({cells:[{r:ansRow,c,t:res,cls:'ans focus'}],say:T('subCol',PL(j),prevTop,db,res)});
+      steps.push({cells:[{r:ansRow,c,t:res,cls:'ans focus'}],say:T('subCol',PL(j),cur,db,res)});
     }
     // this stage's result becomes the running number for the next stage
     topRow=ansRow;
