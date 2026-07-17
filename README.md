@@ -2,7 +2,7 @@
 
 A bilingual (ગુજરાતી / English) web app that teaches students the **standard written methods** of arithmetic through step-by-step animation. A teacher types any sum — the website writes out the full working digit by digit, exactly the way it's done in an exercise book, with a plain-language explanation and optional voice narration for every step.
 
-**Live demo:** [https://maths-working-book.vercel.app/ ](https://ganit-guru.vercel.app/)
+**Live demo:** https://ganit-guru.vercel.app/
 
 ## ✨ Features
 
