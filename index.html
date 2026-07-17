@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Maths Working Book — Step-by-Step Calculator</title>
+<title>GanitGuru — Step-by-Step Calculator</title>
 <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Patrick+Hand&family=Nunito:wght@400;600;700&family=Noto+Sans+Gujarati:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -68,6 +68,14 @@ body{
 .btn.ghost{background:#fff;color:var(--ink)}
 .btn.ghost:hover{background:#f0f3f8}
 .btn:focus-visible,.chip:focus-visible,.langbtn:focus-visible,.bar input:focus-visible{outline:3px solid var(--green);outline-offset:2px}
+.ops{display:flex;gap:6px}
+.opbtn{
+  width:44px;font-family:'Patrick Hand',cursive;font-size:1.4rem;
+  border:2px solid var(--ink);border-radius:8px;background:#fff;color:var(--ink);
+  cursor:pointer;
+}
+.opbtn:hover{background:#f0f3f8;border-color:var(--green);color:var(--green)}
+.opbtn:focus-visible{outline:3px solid var(--green);outline-offset:2px}
 .chips{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:20px}
 .chip{
   font-family:'Patrick Hand',cursive;font-size:1.05rem;
@@ -163,12 +171,18 @@ footer{margin-top:26px;color:var(--pencil);font-size:.8rem;text-align:center}
 
 <div class="label">
   <button class="langbtn" id="lang">ગુજરાતી</button>
-  <h1 id="ttl">Maths Working Book</h1>
+  <h1 id="ttl">GanitGuru</h1>
   <p id="sub">Teacher types a sum • students watch the standard written method, one step at a time</p>
 </div>
 
 <div class="bar">
-  <input id="expr" placeholder="Type a sum, e.g.  33 ÷ 3   or   478 + 356" aria-label="Enter a calculation">
+  <input id="expr" inputmode="numeric" autocomplete="off" placeholder="Type a sum, e.g.  33 ÷ 3   or   478 + 356" aria-label="Enter a calculation">
+  <div class="ops">
+    <button class="opbtn" type="button">+</button>
+    <button class="opbtn" type="button">−</button>
+    <button class="opbtn" type="button">×</button>
+    <button class="opbtn" type="button">÷</button>
+  </div>
   <button class="btn" id="go">Show working</button>
 </div>
 
@@ -176,6 +190,7 @@ footer{margin-top:26px;color:var(--pencil);font-size:.8rem;text-align:center}
   <button class="chip">33 ÷ 3</button>
   <button class="chip">156 ÷ 12</button>
   <button class="chip">478 + 356</button>
+  <button class="chip">1234 + 323 + 88</button>
   <button class="chip">703 − 458</button>
   <button class="chip">123 × 456</button>
   <button class="chip">987654321 ÷ 123</button>
@@ -238,11 +253,13 @@ en:{
   errSub:(a,b)=>`For this method the bigger number goes first — try ${b} − ${a}.`,
   errDiv0:"We can't divide by zero!",
   errGen:'Something went wrong with that sum — try another one.',
+  errMix:'Please use only one operator at a time — either all + or all − (e.g. 12 + 34 + 5).',
+  errSubNeg:'The running total goes below zero here — make sure the first number is the largest.',
   langBtn:'ગુજરાતી', voiceLang:'en-US',
   noVoice:'No Gujarati voice found on this device. On Android: Settings → Google Text-to-Speech → install the Gujarati voice. Chrome on Android usually has it built in.'
 },
 gu:{
-  title:'ગણિત કાર્યપુસ્તિકા',
+  title:'ગણિત ગુરુ ',
   sub:'શિક્ષક દાખલો લખે • વિદ્યાર્થીઓ પ્રમાણભૂત પદ્ધતિથી પગલાં-દર-પગલાં ગણતરી જુએ',
   placeholder:'સંખ્યા લખો, દા.ત.  33 ÷ 3  અથવા  478 + 356',
   go:'ગણતરી કરો', restart:'⟲ ફરી શરૂ', back:'← પાછળ', play:'▶ ચલાવો', pause:'⏸ થોભો',
@@ -256,6 +273,8 @@ gu:{
   errSub:(a,b)=>`આ પદ્ધતિમાં મોટી સંખ્યા પહેલા આવે — ${b} − ${a} અજમાવો.`,
   errDiv0:'શૂન્ય વડે ભાગી શકાય નહીં!',
   errGen:'કંઈક ખોટું થયું — બીજો દાખલો અજમાવો.',
+  errMix:'એક સમયે માત્ર એક જ ચિહ્ન વાપરો — બધા + અથવા બધા − (દા.ત. 12 + 34 + 5).',
+  errSubNeg:'અહીં કુલ સરવાળો શૂન્યથી નીચે જાય છે — પહેલી સંખ્યા સૌથી મોટી હોવી જોઈએ.',
   langBtn:'English', voiceLang:'gu-IN',
   noVoice:'આ ઉપકરણ પર ગુજરાતી અવાજ મળ્યો નથી. Android પર: Settings → Google Text-to-Speech → ગુજરાતી અવાજ ઇન્સ્ટોલ કરો. (No Gujarati voice on this device — install it in Google Text-to-Speech settings.)'
 }};
@@ -266,10 +285,16 @@ en:{
   addFinalCarry:(c,sum)=>`Finally, bring the carried <b>${c}</b> down: the answer is <b>${sum}</b>.`,
   addCol:(place,da,db,carry,s,unit,nc,nextPlace)=>`<b>${cap(place)}:</b> ${da} + ${db}`+(carry?` + ${carry} (carried)`:``)+` = <b>${s}</b>. Write ${unit}`+(nc?` and carry ${nc} to the ${nextPlace} column.`:`.`),
   addDone:(a,b)=>`✅ Done! <b>${a} + ${b} = ${a+b}</b>`,
+  addIntroN:(list,sum)=>`Write <b>${list.join('</b>, <b>')}</b> under each other, digits lined up by place value. We add from the <b>ones</b> column.`,
+  addColN:(place,parts,carry,s,unit,nc,nextPlace)=>`<b>${cap(place)}:</b> ${parts.join(' + ')}`+(carry?` + ${carry} (carried)`:``)+` = <b>${s}</b>. Write ${unit}`+(nc?` and carry ${nc} to the ${nextPlace} column.`:`.`),
+  addDoneN:(list,sum)=>`✅ Done! <b>${list.join(' + ')} = ${sum}</b>`,
   subIntro:(a,b)=>`Write <b>${a}</b> on top and <b>${b}</b> below, digits lined up. Subtract starting from the <b>ones</b>.`,
   subBorrow:(db,t,lender,mid,place,nv)=>`We can't take ${db} from ${t} — so we <b>borrow</b> from the ${lender} column.${mid?' The 0 in between becomes 9.':''} Now the ${place} digit is <b>${nv}</b>.`,
   subCol:(place,top,db,res)=>`<b>${cap(place)}:</b> ${top} − ${db} = <b>${res}</b>.`,
   subDone:(a,b)=>`✅ Done! <b>${a} − ${b} = ${a-b}</b>`,
+  subIntroN:(list)=>`Write <b>${list[0]}</b> on top and subtract <b>${list[1]}</b> first. We'll take away the other numbers one after another. Subtract from the <b>ones</b>.`,
+  subNext:(n)=>`Now subtract the next number, <b>${n}</b>, from the result above. Start again from the <b>ones</b>.`,
+  subDoneN:(list,res)=>`✅ Done! <b>${list.join(' − ')} = ${res}</b>`,
   mulIntro:(a,b,multi,sp)=>`Write <b>${a}</b> on top and <b>${b}</b> below. We multiply ${a} by each digit of ${b}${multi?`, starting from the <b>${sp}</b> digit`:``}. Each round of carries gets its own small red line above.`,
   mulStage:(a,place,bd)=>`Multiply ${a} by the <b>${place}</b> digit, ${bd}.`,
   mulZeros:(n,bd,place,x)=>`First put <b>${n===1?'a 0':n+' zeros'}</b> — the ${bd} is in the ${place} place, so we're really multiplying by ${x}.`,
@@ -293,10 +318,16 @@ gu:{
   addFinalCarry:(c,sum)=>`છેલ્લે, વદ્દીનો <b>${c}</b> નીચે ઉતારો: જવાબ છે <b>${sum}</b>.`,
   addCol:(place,da,db,carry,s,unit,nc,nextPlace)=>`<b>${place}:</b> ${da} + ${db}`+(carry?` + ${carry} (વદ્દી)`:``)+` = <b>${s}</b>. ${unit} લખો`+(nc?` અને ${nc}ની વદ્દી ${nextPlace}ના સ્તંભ પર લઈ જાઓ.`:`.`),
   addDone:(a,b)=>`✅ થઈ ગયું! <b>${a} + ${b} = ${a+b}</b>`,
+  addIntroN:(list,sum)=>`<b>${list.join('</b>, <b>')}</b> ને એકબીજાની નીચે, અંકો સ્થાનકિંમત પ્રમાણે ગોઠવીને લખો. સરવાળો <b>એકમ</b>થી શરૂ કરીએ.`,
+  addColN:(place,parts,carry,s,unit,nc,nextPlace)=>`<b>${place}:</b> ${parts.join(' + ')}`+(carry?` + ${carry} (વદ્દી)`:``)+` = <b>${s}</b>. ${unit} લખો`+(nc?` અને ${nc}ની વદ્દી ${nextPlace}ના સ્તંભ પર લઈ જાઓ.`:`.`),
+  addDoneN:(list,sum)=>`✅ થઈ ગયું! <b>${list.join(' + ')} = ${sum}</b>`,
   subIntro:(a,b)=>`<b>${a}</b> ઉપર અને <b>${b}</b> નીચે લખો, અંકો ગોઠવીને. બાદબાકી <b>એકમ</b>થી શરૂ કરીએ.`,
   subBorrow:(db,t,lender,mid,place,nv)=>`${t}માંથી ${db} બાદ ન થાય — એટલે ${lender}ના સ્તંભમાંથી <b>ઉધાર</b> લઈએ.${mid?' વચ્ચેનો 0 હવે 9 બને છે.':''} હવે ${place}નો અંક <b>${nv}</b> છે.`,
   subCol:(place,top,db,res)=>`<b>${place}:</b> ${top} − ${db} = <b>${res}</b>.`,
   subDone:(a,b)=>`✅ થઈ ગયું! <b>${a} − ${b} = ${a-b}</b>`,
+  subIntroN:(list)=>`<b>${list[0]}</b> ઉપર લખો અને પહેલા <b>${list[1]}</b> બાદ કરો. બાકીની સંખ્યાઓ એક પછી એક બાદ કરીશું. બાદબાકી <b>એકમ</b>થી શરૂ કરીએ.`,
+  subNext:(n)=>`હવે ઉપરના જવાબમાંથી આગળની સંખ્યા <b>${n}</b> બાદ કરો. ફરી <b>એકમ</b>થી શરૂ કરો.`,
+  subDoneN:(list,res)=>`✅ થઈ ગયું! <b>${list.join(' − ')} = ${res}</b>`,
   mulIntro:(a,b,multi,sp)=>`<b>${a}</b> ઉપર અને <b>${b}</b> નીચે લખો. ${a} ને ${b}ના દરેક અંક વડે ગુણીશું${multi?`, <b>${sp}</b>ના અંકથી શરૂ કરીને`:``}. દરેક તબક્કાની વદ્દી ઉપર પોતાની નાની લાલ લીટીમાં લખાશે.`,
   mulStage:(a,place,bd)=>`${a} ને <b>${place}</b>ના અંક ${bd} વડે ગુણો.`,
   mulZeros:(n,bd,place,x)=>`પહેલા <b>${n===1?'એક 0':n+' શૂન્ય'}</b> મૂકો — ${bd} ${place}ના સ્થાને છે, એટલે ખરેખર આપણે ${x} વડે ગુણીએ છીએ.`,
@@ -320,69 +351,115 @@ const T=(k,...args)=>S[LANG][k](...args);
 /* ================= STEP BUILDERS =================
    step = { cells:[{r,c,t,cls}], lines:[{r,c0,c1,pos}], say:"..." }        */
 
-function buildAdd(a,b){
-  const A=dig(a),B=dig(b),w=Math.max(A.length,B.length)+1;
-  const col=(arr,i)=>1+(w-arr.length)+i;           // col 0 = sign column
+function buildAdd(...nums){
+  const N=nums.map(Number);
+  const D=N.map(dig);
+  const maxLen=Math.max(...D.map(x=>x.length));
+  const w=maxLen+String(N.length*9).length;   // extra columns for carries
+  const rowsN=N.length;
+  const col=(len,i)=>1+(w-len)+i;              // right-align each number
+  const ansRow=rowsN+1;                        // answer sits below all numbers
   const steps=[],base=[];
-  A.forEach((d,i)=>base.push({r:1,c:col(A,i),t:d}));
-  B.forEach((d,i)=>base.push({r:2,c:col(B,i),t:d}));
-  base.push({r:2,c:0,t:'+',cls:'op'});
-  steps.push({cells:base,lines:[{r:2,c0:0,c1:w,pos:'bottom'}],say:T('addIntro',a,b)});
+  let minSignCol=Infinity;
+  D.forEach((arr,ri)=>{
+    arr.forEach((d,i)=>base.push({r:ri+1,c:col(arr.length,i),t:d}));
+    minSignCol=Math.min(minSignCol,col(arr.length,0));
+  });
+  const signCol=minSignCol-1;
+  base.push({r:rowsN,c:signCol,t:'+',cls:'op'});
+  const lineC1=w;
+  steps.push({cells:base,lines:[{r:rowsN,c0:signCol,c1:lineC1,pos:'bottom'}],
+    say:T('addIntroN',N,N.reduce((a,b)=>a+b,0))});
   let carry=0;
   for(let j=0;j<w;j++){
-    const cA=A[A.length-1-j], cB=B[B.length-1-j];
-    if(cA===undefined&&cB===undefined&&carry===0) break;
-    const da=cA??0, db=cB??0, s=da+db+carry, unit=s%10, nc=Math.floor(s/10);
+    const digitsThisCol=D.map(arr=>arr[arr.length-1-j]).filter(x=>x!==undefined);
+    if(digitsThisCol.length===0&&carry===0) break;
     const c=w-j;
-    if(cA===undefined&&cB===undefined){
-      steps.push({cells:[{r:3,c,t:carry,cls:'ans focus'}],say:T('addFinalCarry',carry,a+b)});
+    if(digitsThisCol.length===0){
+      // only carry left — write remaining carry digits
+      const cs=String(carry).split('').map(Number);
+      const cells=cs.map((d,k)=>({r:ansRow,c:c-(cs.length-1)+k,t:d,cls:'ans focus'}));
+      steps.push({cells,say:T('addFinalCarry',carry,N.reduce((a,b)=>a+b,0))});
       carry=0; break;
     }
-    const cells=[{r:3,c,t:unit,cls:'ans focus'}];
+    const sum=digitsThisCol.reduce((a,b)=>a+b,0)+carry;
+    const unit=sum%10, nc=Math.floor(sum/10);
+    const parts=digitsThisCol.slice().reverse(); // show top-to-bottom order
+    const cells=[{r:ansRow,c,t:unit,cls:'ans focus'}];
     if(nc) cells.push({r:0,c:c-1,t:nc,cls:'carry focus'});
-    steps.push({cells,say:T('addCol',PL(j),da,db,carry,s,unit,nc,PL(j+1))});
+    steps.push({cells,say:T('addColN',PL(j),parts,carry,sum,unit,nc,PL(j+1))});
     carry=nc;
   }
-  steps.push({cells:[],say:T('addDone',a,b)});
+  steps.push({cells:[],say:T('addDoneN',N,N.reduce((a,b)=>a+b,0))});
   return steps;
 }
 
-function buildSub(a,b){
-  const T_=dig(a),B=dig(b),w=T_.length;
-  const col=(arr,i)=>1+(w-arr.length)+i;
-  const steps=[],base=[];
-  T_.forEach((d,i)=>base.push({r:1,c:col(T_,i),t:d}));
-  B.forEach((d,i)=>base.push({r:2,c:col(B,i),t:d}));
-  base.push({r:2,c:0,t:'−',cls:'op'});
-  steps.push({cells:base,lines:[{r:2,c0:0,c1:w,pos:'bottom'}],say:T('subIntro',a,b)});
-  const top=[...T_];
-  for(let j=0;j<w;j++){
-    const i=w-1-j, c=w-j;
-    const db=B[B.length-1-j]??0;
-    if(top[i]<db){
-      let k=i-1; while(top[k]===0) k--;
-      const cells=[];
-      cells.push({r:1,c:k+1,t:top[k],cls:'strike focus'});
-      top[k]-=1;
-      cells.push({r:0,c:k+1,t:top[k],cls:'borrow focus'});
-      let mid=false;
-      for(let m=k+1;m<i;m++){
-        cells.push({r:1,c:m+1,t:0,cls:'strike focus'});
-        cells.push({r:0,c:m+1,t:9,cls:'borrow focus'});
-        top[m]=9; mid=true;
-      }
-      cells.push({r:1,c:i+1,t:top[i],cls:'strike focus'});
-      const orig=top[i];
-      top[i]+=10;
-      cells.push({r:0,c:i+1,t:top[i],cls:'borrow focus'});
-      steps.push({cells,say:T('subBorrow',db,orig,PL(w-1-k),mid,PL(j),top[i])});
+function buildSub(...nums){
+  const N=nums.map(Number);
+  // sequential staged subtraction: ((N0 - N1) - N2) - ...
+  const w=String(N[0]).length;
+  const col=(len,i)=>1+(w-len)+i;
+  const steps=[];
+  const D=N.map(dig);
+
+  // ----- initial layout: first number, and the first subtrahend below it -----
+  const base=[];
+  D[0].forEach((d,i)=>base.push({r:1,c:col(D[0].length,i),t:d}));
+  D[1].forEach((d,i)=>base.push({r:2,c:col(D[1].length,i),t:d}));
+  const signCol=Math.min(col(D[0].length,0),col(D[1].length,0))-1;
+  base.push({r:2,c:signCol,t:'−',cls:'op'});
+  steps.push({cells:base,lines:[{r:2,c0:signCol,c1:w,pos:'bottom'}],
+    say:N.length>2?T('subIntroN',N):T('subIntro',N[0],N[1])});
+
+  let top=[...D[0]];
+  while(top.length<w) top.unshift(0);
+  let topRow=1;          // row where the current running-number digits live
+  let subRow=2;          // row of the subtrahend being processed
+  let ansRow=3;          // row where this stage's result is written
+
+  for(let s=1;s<N.length;s++){
+    const B=dig(N[s]);
+    if(s>1){
+      // reveal the next subtrahend under the previous result, with its own line
+      const cells=B.map((d,k)=>({r:subRow,c:col(B.length,k),t:d,cls:'focus'}));
+      const sc=col(B.length,0)-1;
+      cells.push({r:subRow,c:sc,t:'−',cls:'op'});
+      steps.push({cells,lines:[{r:subRow,c0:sc,c1:w,pos:'bottom'}],
+        say:T('subNext',N[s])});
     }
-    const res=top[i]-db;
-    const prevTop=top[i];
-    top[i]=res;
-    steps.push({cells:[{r:3,c,t:res,cls:'ans focus'}],say:T('subCol',PL(j),prevTop,db,res)});
+    for(let j=0;j<w;j++){
+      const i=w-1-j, c=w-j;
+      const db=B[B.length-1-j]??0;
+      if(top[i]<db){
+        let k=i-1; while(top[k]===0) k--;
+        const cells=[];
+        cells.push({r:topRow,c:k+1,t:top[k],cls:'strike focus'});
+        top[k]-=1;
+        cells.push({r:0,c:k+1,t:top[k],cls:'borrow focus'});
+        let mid=false;
+        for(let m=k+1;m<i;m++){
+          cells.push({r:topRow,c:m+1,t:0,cls:'strike focus'});
+          cells.push({r:0,c:m+1,t:9,cls:'borrow focus'});
+          top[m]=9; mid=true;
+        }
+        cells.push({r:topRow,c:i+1,t:top[i],cls:'strike focus'});
+        const orig=top[i];
+        top[i]+=10;
+        cells.push({r:0,c:i+1,t:top[i],cls:'borrow focus'});
+        steps.push({cells,say:T('subBorrow',db,orig,PL(w-1-k),mid,PL(j),top[i])});
+      }
+      const res=top[i]-db;
+      const prevTop=top[i];
+      top[i]=res;
+      steps.push({cells:[{r:ansRow,c,t:res,cls:'ans focus'}],say:T('subCol',PL(j),prevTop,db,res)});
+    }
+    // this stage's result becomes the running number for the next stage
+    topRow=ansRow;
+    subRow=ansRow+1;
+    ansRow=ansRow+2;
   }
-  steps.push({cells:[],say:T('subDone',a,b)});
+  const result=N.reduce((a,b)=>a-b);
+  steps.push({cells:[],say:N.length>2?T('subDoneN',N,result):T('subDone',N[0],N[1])});
   return steps;
 }
 
@@ -418,8 +495,13 @@ function buildMul(a,b){
   const steps=[],base=[];
   base.push(...put(rTop,a,0));
   base.push(...put(rB,b,0));
-  base.push({r:rB,c:W-Math.max(String(b).length,String(a).length),t:'×',cls:'op'});
-  steps.push({cells:base,lines:[{r:rB,c0:0,c1:W,pos:'bottom'}],
+  // leftmost digit column actually used by a or b (they're right-aligned to W)
+  const numLeft=Math.min(...base.filter(c=>c.r===rTop||c.r===rB).map(c=>c.c));
+  const bRight=Math.max(...base.filter(c=>c.r===rB).map(c=>c.c)); // b's last digit col
+  const crossCol=numLeft-1;              // × sits just left of the numbers
+  base.push({r:rB,c:crossCol,t:'×',cls:'op'});
+  // top line runs only under the cross + b digits (answers may extend beyond it)
+  steps.push({cells:base,lines:[{r:rB,c0:crossCol,c1:bRight,pos:'bottom'}],
     say:T('mulIntro',a,b,Bd.length>1,PL(Bd.length-1))});
   let row=rPart0;
   let nextCarryRow=rTop-1;               // first stage's carries sit closest to the number
@@ -475,7 +557,7 @@ function buildDiv(a,b){
   base.push({r:1,c:dl,t:'',cls:'vbar'});           // straight vertical line
   D.forEach((d,i)=>base.push({r:1,c:off+i,t:d}));
   steps.push({cells:base,lines:[{r:1,c0:off,c1:off+n-1,pos:'top'}],say:T('divIntro',a,b)});
-  let r=0,started=false,row=2,remRow=null,rem=0;
+  let r=0,started=false,row=2,remRow=null,rem=0,qpos=0;
   for(let i=0;i<n;i++){
     const d=D[i];
     if(started){
@@ -488,7 +570,8 @@ function buildDiv(a,b){
       continue;
     }
     started=true;
-    steps.push({cells:[{r:0,c:off+i,t:q,cls:'ans focus'}],say:T('divQ',b,r,q)});
+    steps.push({cells:[{r:0,c:off+qpos,t:q,cls:'ans focus'}],say:T('divQ',b,r,q)});
+    qpos++;
     const p=q*b,P=dig(p);
     const pc=P.map((pd,k)=>({r:row,c:off+i-(P.length-1)+k,t:pd,cls:'focus'}));
     const minusCol=off+i-P.length;
@@ -507,7 +590,7 @@ function buildDiv(a,b){
 }
 
 /* ================= RENDERER & PLAYER ================= */
-let steps=[],idx=0,timer=null,voiceOn=false;
+let steps=[],idx=0,timer=null,voiceOn=false,CUR_OP='';
 let last=null;   // {a,op,b} of the current sum, for language re-render
 
 /* ---- speech: voices load asynchronously, and we must pick the right one ---- */
@@ -563,12 +646,20 @@ function render(){
   const avail=Math.min(window.innerWidth,1100)-140;
   const u=Math.max(20,Math.min(48,Math.floor(avail/(maxC+1))));
   board.style.setProperty('--cell',u+'px');
-  // variable column widths: the division-bar column is narrow so the
-  // divisor sits right next to the dividend
+  // variable column widths for tighter, natural number spacing
   const widths=new Array(maxC+1).fill(u);
+  let vbarCol=-1;
   steps.forEach(s=>(s.cells||[]).forEach(c=>{
-    if(c.cls&&c.cls.indexOf('vbar')>-1) widths[c.c]=Math.round(u*0.35);
+    if(c.cls&&c.cls.indexOf('vbar')>-1){widths[c.c]=Math.round(u*0.35);vbarCol=c.c;}
   }));
+  const TIGHT=Math.round(u*0.6);   // narrower digit cell
+  if(CUR_OP==='div'){
+    // every digit column in division is tightened (alignment preserved)
+    for(let c=0;c<=maxC;c++) if(c!==vbarCol) widths[c]=TIGHT;
+  }else if(CUR_OP==='mul'||CUR_OP==='add'||CUR_OP==='sub'){
+    // tighten all digit columns; the sign lives in column 0, kept close
+    for(let c=0;c<=maxC;c++) widths[c]=TIGHT;
+  }
   const xs=[0];
   for(let c=0;c<=maxC;c++) xs[c+1]=xs[c]+widths[c];
   board.style.width=xs[maxC+1]+'px';
@@ -614,18 +705,48 @@ function startPlay(){
   $('play').textContent=UI[LANG].pause;
 }
 
-function buildSteps(a,op,b){
-  if(op==='+') return buildAdd(a,b);
-  if(op==='-'||op==='−') return buildSub(a,b);
-  if(op==='*'||op==='x'||op==='X'||op==='×') return buildMul(a,b);
-  return buildDiv(a,b);
+function buildSteps(nums,op){
+  if(op==='+'){CUR_OP='add';return buildAdd(...nums);}
+  if(op==='-'||op==='−'){CUR_OP='sub';return buildSub(...nums);}
+  if(op==='*'||op==='x'||op==='X'||op==='×'){CUR_OP='mul';return buildMul(nums[0],nums[1]);}
+  CUR_OP='div';return buildDiv(nums[0],nums[1]);
 }
 
 function showErr(msg){const err=$('err');err.textContent=msg;err.classList.remove('hidden');}
 
 function start(exprStr){
-  const m=exprStr.replace(/,/g,'').match(/^\s*(\d+)\s*([+\-−*xX×\/÷%])\s*(\d+)\s*$/);
   $('err').classList.add('hidden');
+  const clean=exprStr.replace(/,/g,'').trim();
+
+  // Try a chain of one repeated operator: a + b + c ...  or  a − b − c ...
+  const chain=clean.match(/^\s*\d+(?:\s*[+\-−]\s*\d+)+\s*$/);
+  const singleOps=clean.match(/[*xX×\/÷%]/);
+
+  // Multi-number add/sub (2 or more numbers, all + or all −)
+  if(chain && !singleOps){
+    const parts=clean.split(/\s*([+\-−])\s*/).filter(x=>x!=='');
+    // parts = [num, op, num, op, num, ...]
+    const nums=[], ops=[];
+    parts.forEach((tok,i)=>{ if(i%2===0) nums.push(tok); else ops.push(tok==='-'?'−':tok); });
+    const uniqueOps=[...new Set(ops)];
+    if(uniqueOps.length>1){ showErr(UI[LANG].errMix); return; }
+    const op=uniqueOps[0];
+    if(nums.some(x=>x.length>12)){ showErr(UI[LANG].errLen); return; }
+    const nn=nums.map(Number);
+    if(op==='−'){
+      // running result must never go negative for the written method
+      let run=nn[0];
+      for(let i=1;i<nn.length;i++){ run-=nn[i]; if(run<0){ showErr(UI[LANG].errSubNeg); return; } }
+    }
+    try{ steps=buildSteps(nn,op); }
+    catch(e){ showErr(UI[LANG].errGen); return; }
+    last={nums:nn,op};
+    finishStart();
+    return;
+  }
+
+  // Two-number form for × ÷ (and simple + −)
+  const m=clean.match(/^\s*(\d+)\s*([+\-−*xX×\/÷%])\s*(\d+)\s*$/);
   if(!m){showErr(UI[LANG].errParse);return;}
   const a=+m[1], b=+m[3], op=m[2];
   const la=m[1].length, lb=m[3].length;
@@ -633,10 +754,15 @@ function start(exprStr){
   const isMul=(op==='*'||op==='x'||op==='X'||op==='×');
   if(isMul&&la+lb>15){showErr(UI[LANG].errMul);return;}
   if((op==='-'||op==='−')&&a<b){showErr(UI[LANG].errSub(a,b));return;}
-  if(!isMul&&op!=='+'&&op!=='-'&&op!=='−'&&b===0){showErr(UI[LANG].errDiv0);return;}
-  try{ steps=buildSteps(a,op,b); }
+  const isDiv=(op==='/'||op==='÷'||op==='%');
+  if(isDiv&&b===0){showErr(UI[LANG].errDiv0);return;}
+  try{ steps=buildSteps([a,b],op); }
   catch(e){showErr(UI[LANG].errGen);return;}
-  last={a,op,b};
+  last={nums:[a,b],op};
+  finishStart();
+}
+
+function finishStart(){
   idx=0; stopPlay();
   $('page').classList.remove('hidden');
   $('say').classList.remove('hidden');
@@ -671,13 +797,33 @@ $('lang').onclick=()=>{
   $('err').classList.add('hidden');
   if(last){                       // re-narrate the current sum in the new language
     const keep=idx;
-    steps=buildSteps(last.a,last.op,last.b);
+    steps=buildSteps(last.nums,last.op);
     idx=Math.min(keep,steps.length-1);
     render();
   }
 };
 
 /* ================= WIRING ================= */
+// allow only digits and maths symbols in the input
+$('expr').addEventListener('input',function(){
+  const clean=this.value.replace(/[^0-9+\-\u2212*xX\u00d7\/\u00f7%\s,]/g,'');
+  if(clean!==this.value){
+    const pos=this.selectionStart-(this.value.length-clean.length);
+    this.value=clean;
+    this.setSelectionRange(Math.max(0,pos),Math.max(0,pos));
+  }
+});
+// operator buttons insert the symbol at the cursor position
+document.querySelectorAll('.opbtn').forEach(b=>{
+  b.addEventListener('click',()=>{
+    const inp=$('expr');
+    const st=inp.selectionStart??inp.value.length, en=inp.selectionEnd??inp.value.length;
+    inp.value=inp.value.slice(0,st)+' '+b.textContent+' '+inp.value.slice(en);
+    const np=st+3;
+    inp.focus();
+    inp.setSelectionRange(np,np);
+  });
+});
 $('go').onclick=()=>start($('expr').value);
 $('expr').addEventListener('keydown',e=>{if(e.key==='Enter')start($('expr').value);});
 $('chips').addEventListener('click',e=>{
