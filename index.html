@@ -286,7 +286,7 @@ en:{
   addCol:(place,da,db,carry,s,unit,nc,nextPlace)=>`<b>${cap(place)}:</b> ${da} + ${db}`+(carry?` + ${carry} (carried)`:``)+` = <b>${s}</b>. Write ${unit}`+(nc?` and carry ${nc} to the ${nextPlace} column.`:`.`),
   addDone:(a,b)=>`✅ Done! <b>${a} + ${b} = ${a+b}</b>`,
   addIntroN:(list,sum)=>`Write <b>${list.join('</b>, <b>')}</b> under each other, digits lined up by place value. We add from the <b>ones</b> column.`,
-  addColN:(place,parts,carry,s,unit,nc,nextPlace)=>`<b>${cap(place)}:</b> ${parts.join(' + ')}`+(carry?` + ${carry} (carried)`:``)+` = <b>${s}</b>. Write ${unit}`+(nc?` and carry ${nc} to the ${nextPlace} column.`:`.`),
+  addColN:(place,parts,carry,s,unit,nc,nextPlace,more)=>`<b>${cap(place)}:</b> ${parts.join(' + ')}`+(carry?` + ${carry} (carried)`:``)+` = <b>${s}</b>. `+(nc?(more?`Write ${unit} and carry ${nc} to the ${nextPlace} column.`:`There are no more digits, so write the whole <b>${s}</b> in the answer.`):`Write ${unit}.`),
   addDoneN:(list,sum)=>`✅ Done! <b>${list.join(' + ')} = ${sum}</b>`,
   subIntro:(a,b)=>`Write <b>${a}</b> on top and <b>${b}</b> below, digits lined up. Subtract starting from the <b>ones</b>.`,
   subBorrow:(db,t,lender,mid,place,nv)=>`We can't take ${db} from ${t} — so we <b>borrow</b> from the ${lender} column.${mid?' The 0 in between becomes 9.':''} Now the ${place} digit is <b>${nv}</b>.`,
@@ -319,7 +319,7 @@ gu:{
   addCol:(place,da,db,carry,s,unit,nc,nextPlace)=>`<b>${place}:</b> ${da} + ${db}`+(carry?` + ${carry} (વદ્દી)`:``)+` = <b>${s}</b>. ${unit} લખો`+(nc?` અને ${nc}ની વદ્દી ${nextPlace}ના સ્તંભ પર લઈ જાઓ.`:`.`),
   addDone:(a,b)=>`✅ થઈ ગયું! <b>${a} + ${b} = ${a+b}</b>`,
   addIntroN:(list,sum)=>`<b>${list.join('</b>, <b>')}</b> ને એકબીજાની નીચે, અંકો સ્થાનકિંમત પ્રમાણે ગોઠવીને લખો. સરવાળો <b>એકમ</b>થી શરૂ કરીએ.`,
-  addColN:(place,parts,carry,s,unit,nc,nextPlace)=>`<b>${place}:</b> ${parts.join(' + ')}`+(carry?` + ${carry} (વદ્દી)`:``)+` = <b>${s}</b>. ${unit} લખો`+(nc?` અને ${nc}ની વદ્દી ${nextPlace}ના સ્તંભ પર લઈ જાઓ.`:`.`),
+  addColN:(place,parts,carry,s,unit,nc,nextPlace,more)=>`<b>${place}:</b> ${parts.join(' + ')}`+(carry?` + ${carry} (વદ્દી)`:``)+` = <b>${s}</b>. `+(nc?(more?`${unit} લખો અને ${nc}ની વદ્દી ${nextPlace}ના સ્તંભ પર લઈ જાઓ.`:`હવે આગળ કોઈ અંક નથી, એટલે આખો <b>${s}</b> જવાબમાં લખો.`):`${unit} લખો.`),
   addDoneN:(list,sum)=>`✅ થઈ ગયું! <b>${list.join(' + ')} = ${sum}</b>`,
   subIntro:(a,b)=>`<b>${a}</b> ઉપર અને <b>${b}</b> નીચે લખો, અંકો ગોઠવીને. બાદબાકી <b>એકમ</b>થી શરૂ કરીએ.`,
   subBorrow:(db,t,lender,mid,place,nv)=>`${t}માંથી ${db} બાદ ન થાય — એટલે ${lender}ના સ્તંભમાંથી <b>ઉધાર</b> લઈએ.${mid?' વચ્ચેનો 0 હવે 9 બને છે.':''} હવે ${place}નો અંક <b>${nv}</b> છે.`,
@@ -386,10 +386,20 @@ function buildAdd(...nums){
     const sum=digitsThisCol.reduce((a,b)=>a+b,0)+carry;
     const unit=sum%10, nc=Math.floor(sum/10);
     const parts=digitsThisCol.slice().reverse(); // show top-to-bottom order
-    const cells=[{r:ansRow,c,t:unit,cls:'ans focus'}];
-    if(nc) cells.push({r:0,c:c-1,t:nc,cls:'carry focus'});
-    steps.push({cells,say:T('addColN',PL(j),parts,carry,sum,unit,nc,PL(j+1))});
-    carry=nc;
+    // is there another column of digits to the left? if not, the carry is written
+    // straight into the answer instead of being marked on top
+    const moreDigitsLeft=D.some(arr=>arr[arr.length-1-(j+1)]!==undefined);
+    let cells;
+    if(nc&&!moreDigitsLeft){
+      // last column: no more digits to carry into, so write the whole sum
+      const ds=String(sum).split('').map(Number);
+      cells=ds.map((d,k)=>({r:ansRow,c:c-(ds.length-1)+k,t:d,cls:'ans focus'}));
+    }else{
+      cells=[{r:ansRow,c,t:unit,cls:'ans focus'}];
+      if(nc) cells.push({r:0,c:c-1,t:nc,cls:'carry focus'});
+    }
+    steps.push({cells,say:T('addColN',PL(j),parts,carry,sum,unit,nc,PL(j+1),moreDigitsLeft)});
+    carry=(nc&&!moreDigitsLeft)?0:nc;
   }
   steps.push({cells:[],say:T('addDoneN',N,N.reduce((a,b)=>a+b,0))});
   return steps;
